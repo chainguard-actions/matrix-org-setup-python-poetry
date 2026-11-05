@@ -9,6 +9,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | Version | Tag | Upstream commit | Hardening report |
 |---------|-----|-----------------|------------------|
 | v1.2.4 | [`v1.2.4`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/tree/v1.2.4) | [`4421c92`](https://github.com/matrix-org/setup-python-poetry/commit/4421c92b6223f03ae55560e29aa8ebd39cf6314a) | [`HARDENING.md`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/blob/v1.2.4/HARDENING.md) |
+| v1.2.5 | [`v1.2.5`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/tree/v1.2.5) | [`a82e526`](https://github.com/matrix-org/setup-python-poetry/commit/a82e526ebef97ec2d5000e220beb07aaadfda595) | [`HARDENING.md`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/blob/v1.2.5/HARDENING.md) |
 | v2.0.0 | [`v2.0.0`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/tree/v2.0.0) | [`5bbf660`](https://github.com/matrix-org/setup-python-poetry/commit/5bbf6603c5c930615ec8a29f1b5d7d258d905aa4) | [`HARDENING.md`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/blob/v2.0.0/HARDENING.md) |
 
 ## Privacy
