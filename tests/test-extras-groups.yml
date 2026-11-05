@@ -1,0 +1,33 @@
+name: Test extras and groups
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Generate poetry.lock for fixture project
+        run: bash tests/fixtures/lock-project.sh tests/fixtures/extras-groups-project
+      - name: Put pip --user bin dir on PATH (as on hosted runners)
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          working-directory: tests/fixtures/extras-groups-project
+          python-version: "3.12"
+          extras: fancy
+          groups: lint
+      - name: Assert extras and groups installed
+        working-directory: tests/fixtures/extras-groups-project
+        run: |
+          python -m poetry run pip list
+          for pkg in demo-extras six toml; do
+            if ! python -m poetry run pip show "$pkg" >/dev/null 2>&1; then
+              echo "FAIL: $pkg not installed"
+              exit 1
+            fi
+            echo "ok: $pkg installed"
+          done
+          echo "PASS"

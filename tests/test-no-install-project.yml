@@ -1,0 +1,29 @@
+name: Test install-project false
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Generate poetry.lock for fixture project
+        run: bash tests/fixtures/lock-project.sh tests/fixtures/basic-project
+      - name: Put pip --user bin dir on PATH (as on hosted runners)
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          working-directory: tests/fixtures/basic-project
+          python-version: "3.12"
+          install-project: "false"
+      - name: Assert project root NOT installed
+        working-directory: tests/fixtures/basic-project
+        run: |
+          python -m poetry run pip list
+          if python -m poetry run pip show demo-pkg >/dev/null 2>&1; then
+            echo "FAIL: demo-pkg should not be installed with install-project=false"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,42 @@
+name: Test basic usage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Generate poetry.lock for fixture project
+        run: bash tests/fixtures/lock-project.sh tests/fixtures/basic-project
+      - name: Put pip --user bin dir on PATH (as on hosted runners)
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          working-directory: tests/fixtures/basic-project
+          python-version: "3.12"
+      - name: Assert project installed in poetry venv
+        working-directory: tests/fixtures/basic-project
+        run: |
+          set -e
+          python --version
+          python -m poetry --version
+          VER="$(python -m poetry --version)"
+          echo "poetry: $VER"
+          if ! echo "$VER" | grep -q "2.1.1"; then
+            echo "FAIL: expected poetry 2.1.1"
+            exit 1
+          fi
+          if ! python -m poetry run pip show demo-pkg; then
+            echo "FAIL: demo-pkg not installed in venv"
+            exit 1
+          fi
+          PYV="$(python -m poetry run python -c 'import sys; print("%d.%d" % sys.version_info[:2])')"
+          echo "venv python: $PYV"
+          if [ "$PYV" != "3.12" ]; then
+            echo "FAIL: expected venv python 3.12"
+            exit 1
+          fi
+          echo "PASS"

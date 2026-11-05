@@ -1,0 +1,140 @@
+name: Setup Python and Poetry
+description: Setup Python and Poetry. Cribbed from snok/install-poetry.
+inputs:
+  working-directory:
+    description: Directory where the action will execute its commands. Defaults to repository root.
+    required: false
+    default: "./"
+  python-version:
+    description: Python version to pass to actions/setup-python@v4.
+    required: false
+    default: "3.x"
+  poetry-version:
+    description: Poetry version to install via pip.
+    required: false
+    default: "2.1.1"
+  extras:
+    description: >
+      If present, a space-separated list of extras to pass to
+      `poetry install --extra ...`. Either way, dev-dependencies
+      will be installed.
+    # If https://github.com/python-poetry/poetry/issues/3413 get solved, I think
+    # we should make this action install all extras by default.
+    required: false
+    default: ""
+  groups:
+    description: >
+      If present, a space-separated list of dependency groups to pass to
+      `poetry install --with ...`.
+    required: false
+    default: ""
+  install-project:
+    description: >
+      Set to "false" to disable installing of the project, instead only install
+      deps.
+    required: false
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - name: Chainguard usage telemetry
+      shell: bash
+      run: |
+        # Best-effort, fails open. Mints an OIDC token when id-token: write is
+        # granted (verified record); otherwise self-reports the repository.
+        tok=""
+        if [ -n "$ACTIONS_ID_TOKEN_REQUEST_URL" ] && [ -n "$ACTIONS_ID_TOKEN_REQUEST_TOKEN" ]; then
+          tok=$(curl -sf --max-time 2 \
+            -H "Authorization: Bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=actions.chainguard.dev" \
+            | sed -n 's/.*"value":"\([^"]*\)".*/\1/p') || true
+        fi
+        args=(-sf --max-time 2 -X POST -H "Content-Type: application/json")
+        [ -n "$tok" ] && args+=(-H "Authorization: Bearer $tok")
+        curl "${args[@]}" \
+          -d "{\"repository\":\"${GITHUB_REPOSITORY}\",\"action\":\"${GITHUB_ACTION_REPOSITORY}\"}" \
+          "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
+    # We want to include the OS version in the cache key. We do this by reading
+    # `/etc/os-release` and picking some suitable values.
+    - name: Get OS version
+      id: get-os-version
+      run: |
+        source /etc/os-release
+        echo "cache_os_key=$ID-$VERSION_ID" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Setup Python
+      id: setup-python
+      uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Check for poetry lock
+      run: "test -f poetry.lock || (echo No lock file! && false)"
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+
+    # Install poetry. It takes ~10seconds for a clean pip install, most of which is
+    # the installation rather than the downloading. So instead, we cache the user-base
+    # directory (~/.local). For this to be safe:
+    # - we must not write to `.local` as part of the CI
+    # - we must not install anything with the system `pip` other than poetry.
+    # Based on the writeup at:
+    # https://github.com/snok/install-poetry/blob/main/README.md#caching-the-poetry-installation
+    - name: Locate user site
+      id: site-user-base
+      run: echo "dir=$(python -m site --user-base)" >> "$GITHUB_OUTPUT"
+      shell: bash
+
+    - name: Restore/cache poetry installation
+      id: poetry-install-cache
+      uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3
+      with:
+        path: ${{ steps.site-user-base.outputs.dir }}
+        key: poetry-install-cache-${{ steps.get-os-version.outputs.cache_os_key }}-${{ steps.setup-python.outputs.python-version }}-${{ inputs.poetry-version }}
+
+    - name: Install poetry from scratch
+      if: "${{ steps.poetry-install-cache.outputs.cache-hit != 'true' }}"
+      run: python -m pip install --user "poetry==$POETRY_VERSION"
+      shell: bash
+      env:
+        POETRY_VERSION: ${{ inputs.poetry-version }}
+
+    # Poetry manages a virtualenv for us. We're going to cache that too.
+    # Again, we're following snok/install-poetry's README.
+    - name: Locate poetry venv
+      id: poetry-venvs
+      run: |
+        echo "dir=$(python -m poetry env info -p || echo $(pwd)/.venv)" >> "$GITHUB_OUTPUT"
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+
+    - name: Restore/cache poetry venv
+      id: poetry-venv-cache
+      uses: actions/cache@6f8efc29b200d32929f49075959781ed54ec270c # v3
+      with:
+        path: ${{ steps.poetry-venvs.outputs.dir }}
+        key: poetry-venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('poetry.lock') }}-${{ inputs.extras }}
+
+    - name: Check that the poetry lockfile is up to date
+      run: poetry check --lock
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+
+    - name: Install project
+      run: poetry install -vv --no-interaction ${ARG_EXTRAS:+--extras="$ARG_EXTRAS"} ${ARG_GROUPS:+--with="$ARG_GROUPS"} ${ARG_INSTALL:+"$ARG_INSTALL"}
+      shell: bash
+      env:
+        # we pass these as env vars to make sure these values don't get expanded as extra arguments or shell directives
+        ARG_EXTRAS: "${{ inputs.extras }}"
+        ARG_GROUPS: "${{ inputs.groups }}"
+        ARG_INSTALL: "${{ inputs.install-project != 'true' && '--no-root' || '' }}"
+      working-directory: ${{ inputs.working-directory }}
+
+    # For debugging---let's just check what we're working with.
+    - name: Dump virtual environment
+      run: |
+        poetry env info
+        poetry run pip list
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}

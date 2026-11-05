@@ -1,0 +1,22 @@
+[project]
+name = "demo-extras"
+version = "0.1.0"
+description = "Demo project with extras and groups"
+requires-python = ">=3.8"
+dependencies = []
+
+[project.optional-dependencies]
+fancy = ["six>=1.16"]
+
+[tool.poetry]
+packages = [{ include = "demo_extras" }]
+
+[tool.poetry.group.lint]
+optional = true
+
+[tool.poetry.group.lint.dependencies]
+toml = ">=0.10"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
