@@ -1,0 +1,44 @@
+name: Test basic install of project
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create poetry project
+        run: python3 tests/fixtures/make-project.py "$GITHUB_WORKSPACE/test-proj-basic"
+      - name: Put user-base bin dir on PATH (as on hosted runners)
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          working-directory: test-proj-basic
+          python-version: "3.11"
+          poetry-version: "1.8.3"
+      - name: Assert poetry is installed
+        run: |
+          v="$(python -m poetry --version)"
+          echo "poetry version: $v"
+          if ! echo "$v" | grep -q "1.8.3"; then
+            echo "FAIL: expected poetry 1.8.3"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert project installed in venv
+        working-directory: test-proj-basic
+        run: |
+          python -m poetry run pip list
+          if ! python -m poetry run pip show test-project; then
+            echo "FAIL: test-project not installed in venv"
+            exit 1
+          fi
+          out="$(cd /tmp && python -m poetry -C "$GITHUB_WORKSPACE/test-proj-basic" run python -c 'import test_project; print(test_project.VALUE)')"
+          echo "import output: $out"
+          if [ "$out" != "hello" ]; then
+            echo "FAIL: could not import project"
+            exit 1
+          fi
+          echo "PASS"

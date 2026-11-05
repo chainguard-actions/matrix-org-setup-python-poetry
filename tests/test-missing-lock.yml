@@ -1,0 +1,27 @@
+name: Test missing poetry.lock fails
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create poetry project without a lockfile
+        run: python3 tests/fixtures/make-project.py "$GITHUB_WORKSPACE/test-proj-nolock" --no-lock
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          working-directory: test-proj-nolock
+          python-version: "3.11"
+          poetry-version: "1.8.3"
+      - name: Assert action failed
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected failure when poetry.lock is missing"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,31 @@
+name: Test install-project false (deps only)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create poetry project
+        run: python3 tests/fixtures/make-project.py "$GITHUB_WORKSPACE/test-proj-noroot"
+      - name: Put user-base bin dir on PATH (as on hosted runners)
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          working-directory: test-proj-noroot
+          python-version: "3.11"
+          poetry-version: "1.8.3"
+          install-project: "false"
+      - name: Assert project NOT installed in venv
+        working-directory: test-proj-noroot
+        run: |
+          python -m poetry env info
+          python -m poetry run pip list
+          if python -m poetry run pip show test-project; then
+            echo "FAIL: test-project should not be installed with install-project=false"
+            exit 1
+          fi
+          echo "PASS"

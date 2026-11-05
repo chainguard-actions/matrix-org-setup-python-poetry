@@ -1,15 +1,24 @@
-# matrix-org/setup-python-poetry
+This is an action which sets up Python and poetry for a project that uses [Poetry](https://python-poetry.org/) to manage its dependencies.
+It requires a `poetry.lock` file to be present in the root of the repository. The action:
 
-Setup Python and Poetry. Cribbed from snok/install-poetry.
+- calls [`actions/setup-python`](https://github.com/actions/setup-python),
+- `pip`-installs `poetry`,
+- `poetry install`-s the current project,
+- uses [`actions/cache`](https://github.com/actions/cache) to cache the poetry installation and the virtual environment it manages.
 
-Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at [https://github.com/matrix-org/setup-python-poetry](https://github.com/matrix-org/setup-python-poetry).
+From this point, the caller of the action can run commands within the poetry-managed environment with `poetry run`.
 
-## Versions
+The Python and Poetry versions to are configurable: see `action.yaml` for details.
 
-| Version | Tag | Upstream commit | Hardening report |
-|---------|-----|-----------------|------------------|
-| v1.2.4 | [`v1.2.4`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/tree/v1.2.4) | [`4421c92`](https://github.com/matrix-org/setup-python-poetry/commit/4421c92b6223f03ae55560e29aa8ebd39cf6314a) | [`HARDENING.md`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/blob/v1.2.4/HARDENING.md) |
-| v2.0.0 | [`v2.0.0`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/tree/v2.0.0) | [`5bbf660`](https://github.com/matrix-org/setup-python-poetry/commit/5bbf6603c5c930615ec8a29f1b5d7d258d905aa4) | [`HARDENING.md`](https://github.com/chainguard-actions/matrix-org-setup-python-poetry/blob/v2.0.0/HARDENING.md) |
+This particular action is loosely based on [`snok/install-poetry`](https://github.com/snok/install-poetry): in particular, the advice from its README on handling caching.
+
+# Requirements
+
+This action is only usable on Linux-based systems.
+
+# Releasing
+
+Follow the advice given on the [backend-meta](https://github.com/matrix-org/backend-meta#releases) repo.
 
 ## Privacy
 

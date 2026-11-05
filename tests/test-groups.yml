@@ -1,0 +1,30 @@
+name: Test groups input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create poetry project with a dependency group
+        run: python3 tests/fixtures/make-project.py "$GITHUB_WORKSPACE/test-proj-groups" --group lint
+      - name: Put user-base bin dir on PATH (as on hosted runners)
+        run: |
+          mkdir -p "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          working-directory: test-proj-groups
+          python-version: "3.11"
+          poetry-version: "1.8.3"
+          groups: lint
+      - name: Assert project installed in venv
+        working-directory: test-proj-groups
+        run: |
+          python -m poetry run pip list
+          if ! python -m poetry run pip show test-project; then
+            echo "FAIL: test-project not installed in venv"
+            exit 1
+          fi
+          echo "PASS"
