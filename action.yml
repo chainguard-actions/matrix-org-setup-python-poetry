@@ -56,7 +56,7 @@ runs:
           "https://actions.enforce.dev/actions/v1/record" >/dev/null 2>&1 || true
     - name: Setup Python
       id: setup-python
-      uses: actions/setup-python@7f4fc3e22c37d6ff65e88745f38bd3157c663f7c # v4
+      uses: chainguard-actions/actions-setup-python@8d57ecf645562740357c72731d1ef2ae6f1ef2e7 # v4
       with:
         python-version: ${{ inputs.python-version }}
 
