@@ -1,0 +1,25 @@
+name: Test install-project false
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Ensure user scripts dir is on PATH (as on hosted runners)
+        run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          working-directory: tests/fixtures/simple-project
+          python-version: "3.10"
+          install-project: "false"
+      - name: Assert project not installed
+        working-directory: tests/fixtures/simple-project
+        run: |
+          poetry env info
+          if poetry run pip show demo-project; then
+            echo "FAIL: project should not be installed with install-project=false"
+            exit 1
+          fi
+          echo "PASS"

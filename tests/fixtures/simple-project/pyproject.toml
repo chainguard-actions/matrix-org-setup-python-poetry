@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "demo-project"
+version = "0.1.0"
+description = "Fixture project for setup-python-poetry tests"
+authors = ["Test User <test@example.com>"]
+packages = [{ include = "demo_project" }]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
